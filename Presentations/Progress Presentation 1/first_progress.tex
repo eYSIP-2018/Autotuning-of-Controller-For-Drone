@@ -1,0 +1,101 @@
+\documentclass[10pt, a4paper]{beamer}
+
+\usetheme{Berkeley}
+\usecolortheme{sidebartab}
+
+\begin{document}
+	\setbeamertemplate{sidebar left}{}
+	\title{Progress Presentation-I}
+	\subtitle{e-Yantra Summer Internship-2018 \\ $ $\textbf{Auto-tuning of controller (for Drone)}$ $}
+	\author{$ $Amit Kumar$ $\\$ $Karthik Nayak$ $\\$ $Mahadev Mishal$ $\\
+	Mentors: $ $Fayyaz Pocker, Vamshi Krishna, Simranjeet Singh  $ $}
+	\institute{IIT Bombay}
+	\date{\today}
+	%\addtobeamertemplate{sidebar left}{}{\includegraphics[scale = 0.3]{logowithtext.png}}
+	\frame{\titlepage}
+
+\setbeamertemplate{sidebar left}[sidebar theme]
+\section{Overview of Project}
+\begin{frame}{Overview of Project}
+	\begin{itemize}
+		\item \textbf{Project Name}:  Auto-tuning of controller(for Drone)\\\vspace{1em}
+		\item \textbf{Objective}: To propose a method of auto-tuning the PID and estimating the values of PID parameters. In this project, we will be trying to auto-tune the pluto drone.\\\vspace{1em}
+		\item \textbf{Deliverables}: \begin{enumerate}
+				\item Appreciable auto-tuning of the control parameters and very stable waypoint navigation of pluto drone 
+				\item Documentation of comparing different auto-tuning techniques
+				\end{enumerate}
+	\end{itemize}
+\end{frame}
+
+\section{Overview of Task}
+\begin{frame}{Overview of Task}
+	\begin{tabular}{|p{1.7em}|p{20em}|p{5em}|}\hline
+		\textbf{Task No.} & \textbf{Task} & \textbf{Deadline (in days)}\\\hline
+		1 & \small{Literature survey of present controllers -PID, Improved PID, LQR} & 2\\\hline
+			2 &\small{Implementing PID and tuning PID parameters using Ziegler-Nichols method and testing on AR-Drone model using Gazebo}& 2\\\hline
+3 &\small{ Designing a better control architecture for pluto drone for position holding using whycon marker and applying Ziegler-Nichols method to tune the pluto drone manually }& 5\\\hline
+4 &\small{ Literature survey of autotuning and selecting a method }& 2\\\hline
+	5 &\small{ Implementation of auto-tune on the improved control system and testing on AR-Drone model in Gazebo}& 3\\\hline
+6 &\small{ Implementing the auto-tune on plto drone using different techniques and comparing them. }& 14\\\hline
+	7 &\small{ Documentation }& 2\\\hline			 
+		
+	
+	\end{tabular}
+\end{frame}
+
+\section{Task Accomplished}
+\begin{frame}{Task Accomplished}
+	\begin{itemize}
+		\item \textbf{Prerequisites}: Learnt ROS \vspace{1em}
+		
+		\item Did literature survey of present controllers like PID , Improved PID and LQR \vspace{1em}
+		
+		\item Implemented a simple PID for position holding of AR-Drone model using Gazebo \vspace{1em}
+		
+		\item Partially completed implementation of a simple PID on pluto done
+	\end{itemize}
+\end{frame}
+
+\section{Challenges Faced}
+\begin{frame}{Challenges Faced}
+	\begin{itemize}
+\item \large{Learning ROS} \vspace{1em}
+\begin{enumerate}
+	\item Creating nodes that can communicate with the drone to subscribe and publish relevant data.\vspace{1em}
+	
+\end{enumerate} 
+\item Inconsistent arm and disarm of the pluto drone\vspace{1em}
+
+\item PID tuning \vspace{1em}
+
+\begin{enumerate}
+	\item Manual tuning of the PID parameters by hit and try method\vspace{1em}
+	
+	\item Using Ziegler-Nicols method\vspace{1em}
+	
+\end{enumerate} 
+		  
+	\end{itemize}
+
+\end{frame}
+
+\section{Future Plans}
+\begin{frame}{Future Plans}
+	\begin{itemize}
+		\item Completing Task 3.
+		\vspace{1em}
+		\item Literature survey of autotuning and selecting a method
+		\vspace{1em} 
+		\item Implementation of auto-tune on the improved control system and testing on AR-Drone model in Gazebo
+		\vspace{1em}
+		\item Implementing the auto-tune on pluto drone using different techniques and comparing them.
+		\vspace{1em}
+	\end{itemize}
+\end{frame}
+
+
+\section{Thank You}
+\begin{frame}{Thank You}
+	\centering \textbf{THANK YOU} !!!
+\end{frame}
+\end{document}
