@@ -16,8 +16,6 @@ from geometry_msgs.msg import Twist,PoseArray
 #of change of error till twice amplitude is less than 1 unit. The mentioned condition should be true for 10 cycles.
 #Then Ki is increased till the drones maintains itself in a position of 0.8 units circle. Again this conditon is
 #checked ten times
-sumerr1=0.0
-sumerr=0.0
 x_co=0.0
 y_co=0.0
 z_co=0.0
@@ -46,9 +44,11 @@ err_z_previous=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,
 
 err_x_auto=0.0
 err_y_auto=0.0
+err_z_auto=0.0
 
 err_prior_x_auto=0.0
 err_prior_y_auto=0.0
+err_prior_z_auto=0.0
 
 err=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 err_prior=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
@@ -73,13 +73,13 @@ Kp=[0.0,0.0,0.0]
 Ki=[0.0,0.0,0.0]
 Kd=[0.0,0.0,0.0]
 
-Kp_max=[20,20,30]
-Kp_min=[8,8,16]
+Kp_max=[22,22,40]
+Kp_min=[5,5,20]
 
-Kd_max=[12,12,8]
-Kd_min=[2,2,0]
+Kd_max=[20,20,8]
+Kd_min=[3,3,0]
 
-Ki_max=[15,15,10]
+Ki_max=[50,50,10]
 Ki_min=[0,0,0]
 
 kp_auto_x=Kp_min[0]
@@ -152,7 +152,9 @@ def PID(err):
   global prev_ki
   global err_x_auto
   global err_y_auto
+  global err_z_auto
   global err_prior_x_auto
+  global err_prior_z_auto
   global err_prior_y_auto
   global err_x_previous
   global err_y_previous
@@ -160,9 +162,9 @@ def PID(err):
   global sign_y
   now_time=time.time()
   delta_time=now_time-prev_time
-  if((delta_time)>0.022): #Sample time
+  if((delta_time)>0.023): #Sample time
    for f in xrange(a,a+3,1): #As mentioned above, this is for arrangement of the array
-     sumerr[f]=sumerr[f]+Ki[f%3]*(err[f]/10)*delta_time
+     sumerr[f]=sumerr[f]+Ki[f%3]*(err[f])*delta_time
      sumerr1[f]=(err[f]-err_prior[f])/delta_time
      out[f%3] = Kp[f%3] * err[f] + sumerr[f] + Kd[f%3] * sumerr1[f]
      err_prior[f]=err[f]
@@ -171,64 +173,148 @@ def PID(err):
   delta_whycon=now_whycon-prev_whycon
   if(delta_whycon>0.030): #Rate of whycon co-ordinates
     if(flag_Kp_start==0): #For Finding value of Kp
-      if(math.fabs(err[a])<1.8 and math.fabs(err[a+1])>1.8): #When pitch co-ordiinate is within limits and roll is not
-        print 'entering'
+      print 'Kp tuning initiated'
+      if(math.fabs(err[a])<1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])>2): #When pitch co-ordiinate is within limits and roll is not
+        r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
-        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*40) #rate of change of error
-        Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_z_auto=err[a+2]
+        Kp[1]=Kp[1]+0.1 #rate of change of error
+        Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
-      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])<1.8):
-        print 'entering'
+        err_prior_z_auto=err_z_auto
+      elif(math.fabs(err[a])<1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])<2): #When pitch co-ordiinate is within limits and roll is not
+        r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
-        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*40)
-        Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
+        err_z_auto=err[a+2]
+        Kp[1]=Kp[1]+0.1 #rate of change of error
+        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
-      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])>1.8):
-        print 'entering'
+        err_prior_z_auto=err_z_auto
+      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])<1.8 and math.fabs(err[a+2])>2):
+        r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
-        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*40)
-        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*40)
-        Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_z_auto=err[a+2]
+        Kp[0]=Kp[0]+0.1
+        Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
-      elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<=1.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=1.8):
+        err_prior_z_auto=err_z_auto
+      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])<1.8 and math.fabs(err[a+2])<2):
+        r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
-        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
-        Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_z_auto=err[a+2]
+        Kp[0]=Kp[0]+0.1
+        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
+        err_prior_z_auto=err_z_auto
+      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])>2):
+        r=0
+        err_x_auto=err[a]
+        err_y_auto=err[a+1]
+        err_z_auto=err[a+2]
+        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*30)
+        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*30)
+        Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
+        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_prior_x_auto=err_x_auto
+        err_prior_y_auto=err_y_auto
+        err_prior_z_auto=err_z_auto
+      elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])<2):
+        r=0
+        err_x_auto=err[a]
+        err_y_auto=err[a+1]
+        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*30)
+        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*30)
+        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
+        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_prior_x_auto=err_x_auto
+        err_prior_y_auto=err_y_auto
+      elif(math.fabs(err[a])<=1.8 and math.fabs(err[a+1])<=1.8 and math.fabs(err[a+2])>2):
+        r=0
+        err_x_auto=err[a]
+        err_y_auto=err[a+1]
+        err_z_auto=err[a+2]
+        # Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
+        # Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        #Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
+        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        err_prior_x_auto=err_x_auto
+        err_prior_y_auto=err_y_auto
+        err_prior_z_auto=err_z_auto
+
+      elif(math.fabs(err[a])<=1.8 and math.fabs(err[a+1])<=1.8 and math.fabs(err[a+2])<=2):
         r=r+1
         if(r==10): # To check the condition 10 times
           flag_Kp_start=1
           r=0
       print Kp
+      print Kd
     elif(flag_Kp_start==1): #Kd tuning initiated
         print 'Kp tuned'
+        print 'Kd tuning initiated'
         now_ki=time.time()
-        if((now_ki-prev_ki)>=0.8): #Value is updated after every 0.8 seconds
-          if((math.fabs(max(err_x))-math.fabs(min(err_x)))<=1 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=1):
-          #Twice the amplitude is less than 1 unit.  
+        if((now_ki-prev_ki)>=1): #Value is updated after every 2 seconds
+          if((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            err_z_auto=err[a+2]
+            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+            err_prior_z_auto=err_z_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<=1):
+          #Twice the amplitude is less than 0.5 units.
             r=r+1
-            if(r==10): #Condition checked 10 times
+            if(r==10): #Condition checked 5 times
               r=0
               flag_Kp_start=2
           #When pitch is not damped and roll is
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>1 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<1):
-            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<1 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>1):
-            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>1 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>1):
-            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            Kd[0]=Kd[0]+0.2
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            err_z_auto=err[a+2]
+            Kd[0]=Kd[0]+0.2
+            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+            err_prior_z_auto=err_z_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            Kd[1]=Kd[1]+0.2
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            Kd[0]=Kd[0]+0.2
+            Kd[1]=Kd[1]+0.2
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            err_x_auto=err[a]
+            err_y_auto=err[a+1]
+            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*60)
+            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*60)
+            err_prior_x_auto=err_x_auto
+            err_prior_y_auto=err_y_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            err_x_auto=err[a]
+            err_y_auto=err[a+1]
+            err_z_auto=err[a+2]
+            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*60)
+            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*60)
+            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
+            err_prior_x_auto=err_x_auto
+            err_prior_y_auto=err_y_auto
+            err_prior_z_auto=err_z_auto
           prev_ki=now_ki
         print Kp
         print Kd
@@ -236,22 +322,40 @@ def PID(err):
     elif(flag_Kp_start==2): #Ki tuning initiated
         print 'Kp tuned'
         print 'Kd tuned'
+        print 'Ki tuning initiated'
         now_ki=time.time()
-        if((now_ki-prev_ki)>=2): #Ki value is updated after every 2 seconds
-          if(math.fabs(err[a])>0.8 and math.fabs(err[a+1])>0.8):
+        if((now_ki-prev_ki)>=1): #Ki value is updated after every 2 seconds
+          if(math.fabs(err[a])>0.8 and math.fabs(err[a+1])>0.8 and math.fabs(err[a+2])>1):
             r=0
             Ki[0]=Ki[0]+0.25
             Ki[1]=Ki[1]+0.25
-          elif(math.fabs(err[a]<0.8) and math.fabs(err[a+1])>0.8):
+            Ki[2]=Ki[2]+0.25
+          elif(math.fabs(err[a])>0.8 and math.fabs(err[a+1])>0.8 and math.fabs(err[a+2])<1):
             r=0
-            Ki[1]=Ki[1]+0.5  
-          elif(math.fabs(err[a]>0.8) and math.fabs(err[a+1]<0.8)):
+            Ki[0]=Ki[0]+0.25
+            Ki[1]=Ki[1]+0.25
+          elif(math.fabs(err[a]<0.8) and math.fabs(err[a+1])>0.8 and math.fabs(err[a+2])>1):
             r=0
-            Ki[0]=Ki[0]+0.5
-          elif(math.fabs(err[a]<=0.8) and math.fabs(err[a+1]<=0.8)):
+            Ki[1]=Ki[1]+0.25
+            Ki[2]=Ki[2]+0.25
+          elif(math.fabs(err[a]<0.8) and math.fabs(err[a+1])>0.8 and math.fabs(err[a+2])<1):
+            r=0
+            Ki[1]=Ki[1]+0.25
+          elif(math.fabs(err[a]>0.8) and math.fabs(err[a+1]<0.8) and math.fabs(err[a+2])>1):
+            r=0
+            Ki[0]=Ki[0]+0.25
+            Ki[2]=Ki[2]+0.25
+          elif(math.fabs(err[a]>0.8) and math.fabs(err[a+1]<0.8) and math.fabs(err[a+2])<1):
+            r=0
+            Ki[0]=Ki[0]+0.25
+          elif(math.fabs(err[a]<=0.8) and math.fabs(err[a+1]<=0.8) and math.fabs(err[a+2])>1):
+            r=0
+            Ki[2]=Ki[2]+0.25
+          elif(math.fabs(err[a]<=0.8) and math.fabs(err[a+1]<=0.8) and math.fabs(err[a+2])<=1):
             r=r+1
-            if(r==10): #Condition is checked 10 times
-              print 'Ki tuned'
+            if(r==5): #Condition is checked 5 times
+              print 'All good'
+              print 'Have a nice day !! :)'
               flag_Kp_start=3
           prev_ki=now_ki
         print Kp
@@ -260,31 +364,43 @@ def PID(err):
 
     if(Kp[0]<=Kp_min[0]): #Pitch Kp minimum cap
         Kp[0]=Kp_min[0]
+    elif(Kp[0]>=Kp_max[0]): #Pitch Kp maximum cap
+        Kp[0]=Kp_max[0]
     if(Kp[1]<=Kp_min[1]): #Roll Kp minimum cap
         Kp[1]=Kp_min[1]
-
-    if(Kp[0]>=Kp_max[0]): #Pitch Kp maximum cap
-        Kp[0]=Kp_max[0]
-    if(Kp[1]>=Kp_max[1]): #Roll Kp maximum cap
+    elif(Kp[1]>=Kp_max[1]): #Roll Kp maximum cap
         Kp[1]=Kp_max[1]
+    if(Kp[2]<=Kp_min[2]): #Roll Kp minimum cap
+        Kp[2]=Kp_min[2]
+    elif(Kp[2]>=Kp_max[2]): #Roll Kp maximum cap
+        Kp[2]=Kp_max[2]
 
     if(Kd[0]>=Kd_max[0]): #Pitch Kd maximum cap
         Kd[0]=Kd_max[0]
+    elif(Kd[0]<=Kd_min[0]): #Ptch Kd minimum cap
+        Kd[0]=Kd_min[0]
     if(Kd[1]>=Kd_max[1]): #Roll Kd maximum cap
         Kd[1]=Kd_max[1]
-    if(Kd[0]<=Kd_min[0]): #Ptch Kd minimum cap
-        Kd[0]=Kd_min[0]
-    if(Kd[1]<=Kd_min[1]): #Roll Kd minimum cap
+    elif(Kd[1]<=Kd_min[1]): #Roll Kd minimum cap
         Kd[1]=Kd_min[1]
+    if(Kd[2]>=Kd_max[2]): #Roll Kd maximum cap
+        Kd[2]=Kd_max[2]
+    elif(Kd[2]<=Kd_min[2]): #Roll Kd minimum cap
+        Kd[2]=Kd_min[2]
 
     if(Ki[0]>=Ki_max[0]): 
         Ki[0]=Ki_max[0]
+    elif(Ki[0]<=Ki_min[0]):
+        Ki[0]=Ki_min[0]
     if(Ki[1]>=Ki_max[1]):
         Ki[1]=Ki_max[1]
-    if(Ki[0]<=Ki_min[0]):
-        Ki[0]=Ki_min[0]
-    if(Ki[1]<=Ki_min[1]):
-        Ki[1]=Ki_min[1]  
+    elif(Ki[1]<=Ki_min[1]):
+        Ki[1]=Ki_min[1]
+    if(Ki[2]>=Ki_max[2]):
+        Ki[2]=Ki_max[2]
+    elif(Ki[2]<=Ki_min[2]):
+        Ki[2]=Ki_min[2]  
+
     if(a==15): #Since maximum size of err array is 18
         a=0
     else:
@@ -320,6 +436,7 @@ if __name__=="__main__":
     cmd.rcAUX2 =1500
     cmd.rcAUX3 =1500
     cmd.rcAUX4 =1000
+    prev_time=time.time()
     try:
         pass
         # print value()
@@ -364,6 +481,7 @@ if __name__=="__main__":
                   cmd.rcPitch =1500 - out[0]
                   cmd.rcYaw=1500
                   command_pub.publish(cmd)
+                  #print sumerr[0]
                   # print 'rcThrottle'
                   # print cmd.rcThrottle
                   # print 'rcRoll'
@@ -389,5 +507,3 @@ if __name__=="__main__":
 
     except Exception as e:
         print e
-    #finally:
-    #    print key
