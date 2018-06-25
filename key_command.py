@@ -28,11 +28,13 @@ r=0
 flag_initialize=0
 global i
 global j
+global timeout1
 global timeout
 i=0
 j=0
 timeout=0
-count=1
+timeout1=0
+count=0
 
 err_x=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 err_y=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
@@ -65,8 +67,8 @@ flag_reduce_Kp=0
 flag_Kp_start=0
 sumerr=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 sumerr1=[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-max_vel=150
-min_vel=-150
+max_vel=120
+min_vel=-120
 max_vel_z=250
 min_vel_z=-250
 Kp=[0.0,0.0,0.0]
@@ -74,10 +76,10 @@ Ki=[0.0,0.0,0.0]
 Kd=[0.0,0.0,0.0]
 
 Kp_max=[22,22,40]
-Kp_min=[5,5,20]
+Kp_min=[10,10,20]
 
 Kd_max=[20,20,8]
-Kd_min=[3,3,0]
+Kd_min=[2,2,0]
 
 Ki_max=[50,50,10]
 Ki_min=[0,0,0]
@@ -94,7 +96,7 @@ kd_auto_x=Kd_min[0]
 kd_auto_y=Kd_min[1]
 kd_auto_z=Kd_min[2]
 
-list_co=[0,0,16]
+list_co=[[0,0,15],[-6,-4,22],[-6,4,22]]
 
 def callback1(msg):
   global x_co
@@ -105,7 +107,6 @@ def callback1(msg):
   z_co=msg.poses[0].position.z
 
 def motion():
-  global count
   global err
   global err_x
   global err_y
@@ -118,22 +119,23 @@ def motion():
     Kp=[kp_auto_x,kp_auto_y,kp_auto_z]
     Ki=[ki_auto_x,ki_auto_y,ki_auto_z]
     Kd=[kd_auto_x,kd_auto_y,kd_auto_z]
-    err[a]=list_co[0]-x_co
-    err[a+1]=list_co[1]-y_co
-    err[a+2]=list_co[2]-z_co
+    err[a]=list_co[count][0]-x_co
+    err[a+1]=list_co[count][1]-y_co
+    err[a+2]=list_co[count][2]-z_co
     flag_initialize=1
     PID(err)
   else:
-    err[a]=list_co[0]-x_co #The zeroth, third, sixth..fifteenth values of the array store pitch error
-    err[a+1]=list_co[1]-y_co #Similarly first, fourth, seventh...sixteenth values of the array store roll error
-    err[a+2]=list_co[2]-z_co
+    err[a]=list_co[count][0]-x_co #The zeroth, third, sixth..fifteenth values of the array store pitch error
+    err[a+1]=list_co[count][1]-y_co #Similarly first, fourth, seventh...sixteenth values of the array store roll error
+    err[a+2]=list_co[count][2]-z_co
 
-    err_x[w]=list_co[0]-x_co #Array of 54 elements to store pitch error. This is used to find max and min values  
-    err_y[w]=list_co[1]-y_co #Array of 54 elements to store roll error. This is used to find max and min values
-    err_z[w]=list_co[2]-z_co #Array of 54 elements to store throttle error. This is used to find max and min values
+    err_x[w]=list_co[count][0]-x_co #Array of 54 elements to store pitch error. This is used to find max and min values  
+    err_y[w]=list_co[count][1]-y_co #Array of 54 elements to store roll error. This is used to find max and min values
+    err_z[w]=list_co[count][2]-z_co #Array of 54 elements to store throttle error. This is used to find max and min values
     PID(err)
 
 def PID(err):
+  global count
   global now_time
   global prev_time
   global present_time
@@ -158,13 +160,15 @@ def PID(err):
   global err_prior_y_auto
   global err_x_previous
   global err_y_previous
-  global sign_x
-  global sign_y
+  global timeout
   now_time=time.time()
   delta_time=now_time-prev_time
   if((delta_time)>0.023): #Sample time
    for f in xrange(a,a+3,1): #As mentioned above, this is for arrangement of the array
-     sumerr[f]=sumerr[f]+Ki[f%3]*(err[f])*delta_time
+     if((math.sqrt(err[a]*err[a] +err[a+1]*err[a+1]))<=5):
+       sumerr[f]=sumerr[f]+Ki[f%3]*(err[f])*delta_time
+     else:
+       sumerr[f]=sumerr[f]+Ki[f%3]*(err[f]/10)*delta_time
      sumerr1[f]=(err[f]-err_prior[f])/delta_time
      out[f%3] = Kp[f%3] * err[f] + sumerr[f] + Kd[f%3] * sumerr1[f]
      err_prior[f]=err[f]
@@ -176,59 +180,30 @@ def PID(err):
       print 'Kp tuning initiated'
       if(math.fabs(err[a])<1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])>2): #When pitch co-ordiinate is within limits and roll is not
         r=0
-        err_x_auto=err[a]
-        err_y_auto=err[a+1]
         err_z_auto=err[a+2]
-        Kp[1]=Kp[1]+0.1 #rate of change of error
+        Kp[1]=Kp[1]+0.01 #rate of change of error
         Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
-        err_prior_x_auto=err_x_auto
-        err_prior_y_auto=err_y_auto
         err_prior_z_auto=err_z_auto
       elif(math.fabs(err[a])<1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])<2): #When pitch co-ordiinate is within limits and roll is not
         r=0
-        err_x_auto=err[a]
-        err_y_auto=err[a+1]
-        err_z_auto=err[a+2]
         Kp[1]=Kp[1]+0.1 #rate of change of error
-        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
-        err_prior_x_auto=err_x_auto
-        err_prior_y_auto=err_y_auto
-        err_prior_z_auto=err_z_auto
       elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])<1.8 and math.fabs(err[a+2])>2):
         r=0
-        err_x_auto=err[a]
-        err_y_auto=err[a+1]
         err_z_auto=err[a+2]
         Kp[0]=Kp[0]+0.1
         Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        err_prior_x_auto=err_x_auto
-        err_prior_y_auto=err_y_auto
         err_prior_z_auto=err_z_auto
       elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])<1.8 and math.fabs(err[a+2])<2):
         r=0
-        err_x_auto=err[a]
-        err_y_auto=err[a+1]
-        err_z_auto=err[a+2]
         Kp[0]=Kp[0]+0.1
-        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        err_prior_x_auto=err_x_auto
-        err_prior_y_auto=err_y_auto
-        err_prior_z_auto=err_z_auto
       elif(math.fabs(err[a])>1.8 and math.fabs(err[a+1])>1.8 and math.fabs(err[a+2])>2):
         r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
         err_z_auto=err[a+2]
-        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*30)
-        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*30)
+        Kp[0]=Kp[0]-(math.fabs(err_x_auto)-math.fabs(err_prior_x_auto))/(delta_whycon*100)
+        Kp[1]=Kp[1]-(math.fabs(err_y_auto)-math.fabs(err_prior_y_auto))/(delta_whycon*100)
         Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
         err_prior_z_auto=err_z_auto
@@ -236,30 +211,19 @@ def PID(err):
         r=0
         err_x_auto=err[a]
         err_y_auto=err[a+1]
-        Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*30)
-        Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*30)
-        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
+        Kp[0]=Kp[0]-(math.fabs(err_x_auto)-math.fabs(err_prior_x_auto))/(delta_whycon*100)
+        Kp[1]=Kp[1]-(math.fabs(err_y_auto)-math.fabs(err_prior_y_auto))/(delta_whycon*100)
         err_prior_x_auto=err_x_auto
         err_prior_y_auto=err_y_auto
       elif(math.fabs(err[a])<=1.8 and math.fabs(err[a+1])<=1.8 and math.fabs(err[a+2])>2):
         r=0
-        err_x_auto=err[a]
-        err_y_auto=err[a+1]
         err_z_auto=err[a+2]
-        # Kp[0]=Kp[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        # Kp[1]=Kp[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
         Kp[2]=Kp[2]-(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        #Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-        # Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*100)
-        # Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*100)
-        err_prior_x_auto=err_x_auto
-        err_prior_y_auto=err_y_auto
         err_prior_z_auto=err_z_auto
 
       elif(math.fabs(err[a])<=1.8 and math.fabs(err[a+1])<=1.8 and math.fabs(err[a+2])<=2):
         r=r+1
-        if(r==10): # To check the condition 10 times
+        if(r==10): # To check the condition 1 times
           flag_Kp_start=1
           r=0
       print Kp
@@ -268,60 +232,70 @@ def PID(err):
         print 'Kp tuned'
         print 'Kd tuning initiated'
         now_ki=time.time()
-        if((now_ki-prev_ki)>=1): #Value is updated after every 2 seconds
-          if((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
-            err_z_auto=err[a+2]
-            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-            err_prior_z_auto=err_z_auto
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<=1):
-          #Twice the amplitude is less than 0.5 units.
-            r=r+1
-            if(r==10): #Condition checked 5 times
-              r=0
-              flag_Kp_start=2
-          #When pitch is not damped and roll is
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+        #if((now_ki-prev_ki)>=0.1): #Value is updated after every 0.1 second
+        if((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+          err_z_auto=err[a+2]
+          Kd[2]=Kd[2]+(math.fabs((err_z_auto)-(err_prior_z_auto))/(delta_whycon*100))
+          err_prior_z_auto=err_z_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<=1):
+        #Twice the amplitude is less than 0.5 units.
+          r=r+1
+          if(r==10): #Condition checked 10 times
             r=0
-            Kd[0]=Kd[0]+0.2
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
-            r=0
-            err_z_auto=err[a+2]
-            Kd[0]=Kd[0]+0.2
-            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-            err_prior_z_auto=err_z_auto
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
-            r=0
-            Kd[1]=Kd[1]+0.2
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
-            r=0
-            Kd[0]=Kd[0]+0.2
-            Kd[1]=Kd[1]+0.2
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
-            r=0
-            err_x_auto=err[a]
-            err_y_auto=err[a+1]
-            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*60)
-            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*60)
-            err_prior_x_auto=err_x_auto
-            err_prior_y_auto=err_y_auto
-          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.8 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.8 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
-            r=0
-            err_x_auto=err[a]
-            err_y_auto=err[a+1]
-            err_z_auto=err[a+2]
-            Kd[0]=Kd[0]+(err_x_auto-err_prior_x_auto)/(delta_whycon*60)
-            Kd[1]=Kd[1]+(err_y_auto-err_prior_y_auto)/(delta_whycon*60)
-            Kd[2]=Kd[2]+(err_z_auto-err_prior_z_auto)/(delta_whycon*100)
-            err_prior_x_auto=err_x_auto
-            err_prior_y_auto=err_y_auto
-            err_prior_z_auto=err_z_auto
-          prev_ki=now_ki
+            flag_Kp_start=2
+        #When pitch is not damped and roll is
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+          r=0
+          err_x_auto=err[a]
+          Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+          err_prior_x_auto=err_x_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+          r=0
+          err_x_auto=err[a]
+          err_z_auto=err[a+2]
+          Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+          Kd[2]=Kd[2]+(math.fabs((err_z_auto-err_prior_z_auto))/(delta_whycon*100))
+          err_prior_z_auto=err_z_auto
+          err_prior_x_auto=err_x_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+          r=0
+          err_y_auto=err[a+1]
+          Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+          err_prior_y_auto=err_y_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+          r=0
+          err_z_auto=err[a+2]
+          err_y_auto=err[a+1]
+          Kd[2]=Kd[2]+(math.fabs((err_z_auto-err_prior_z_auto))/(delta_whycon*100))
+          Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+          err_prior_z_auto=err_z_auto
+          err_prior_y_auto=err_y_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+          r=0
+          err_x_auto=err[a]
+          err_y_auto=err[a+1]
+          Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+          Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+          err_prior_x_auto=err_x_auto
+          err_prior_y_auto=err_y_auto
+        elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+          r=0
+          err_x_auto=err[a]
+          err_y_auto=err[a+1]
+          err_z_auto=err[a+2]
+          Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+          Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+          Kd[2]=Kd[2]+(math.fabs(err_z_auto-err_prior_z_auto)/(delta_whycon*100))
+          err_prior_x_auto=err_x_auto
+          err_prior_y_auto=err_y_auto
+          err_prior_z_auto=err_z_auto
+          #prev_ki=now_ki
         print Kp
         print Kd
 
     elif(flag_Kp_start==2): #Ki tuning initiated
         print 'Kp tuned'
-        print 'Kd tuned'
+        print 'Kd tuning in progress'
         print 'Ki tuning initiated'
         now_ki=time.time()
         if((now_ki-prev_ki)>=1): #Ki value is updated after every 2 seconds
@@ -354,9 +328,66 @@ def PID(err):
           elif(math.fabs(err[a]<=0.8) and math.fabs(err[a+1]<=0.8) and math.fabs(err[a+2])<=1):
             r=r+1
             if(r==5): #Condition is checked 5 times
-              print 'All good'
+              print 'All good. Auto tuning completed'
               print 'Have a nice day !! :)'
+              timeout=time.time()+10
               flag_Kp_start=3
+          if((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            err_z_auto=err[a+2]
+            Kd[2]=Kd[2]+(math.fabs((err_z_auto)-(err_prior_z_auto))/(delta_whycon*100))
+            err_prior_z_auto=err_z_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<=0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<=0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<=1):
+          #Twice the amplitude is less than 0.5 units.
+            r=r+1
+            if(r==10): #Condition checked 10 times
+              r=0
+              flag_Kp_start=2
+          #When pitch is not damped and roll is
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            err_x_auto=err[a]
+            Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+            err_prior_x_auto=err_x_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))<0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            err_x_auto=err[a]
+            err_z_auto=err[a+2]
+            Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+            Kd[2]=Kd[2]+(math.fabs((err_z_auto-err_prior_z_auto))/(delta_whycon*100))
+            err_prior_z_auto=err_z_auto
+            err_prior_x_auto=err_x_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            err_y_auto=err[a+1]
+            Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+            err_prior_y_auto=err_y_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))<0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            err_z_auto=err[a+2]
+            err_y_auto=err[a+1]
+            Kd[2]=Kd[2]+(math.fabs((err_z_auto-err_prior_z_auto))/(delta_whycon*100))
+            Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+            err_prior_z_auto=err_z_auto
+            err_prior_y_auto=err_y_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))<1):
+            r=0
+            err_x_auto=err[a]
+            err_y_auto=err[a+1]
+            Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+            Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+            err_prior_x_auto=err_x_auto
+            err_prior_y_auto=err_y_auto
+          elif((math.fabs(max(err_x))-math.fabs(min(err_x)))>0.5 and (math.fabs(max(err_y))-math.fabs(min(err_y)))>0.5 and (math.fabs(max(err_z))-math.fabs(min(err_z)))>1):
+            r=0
+            err_x_auto=err[a]
+            err_y_auto=err[a+1]
+            err_z_auto=err[a+2]
+            Kd[0]=Kd[0]+(math.fabs(err_x_auto-err_prior_x_auto)/(delta_whycon*100))
+            Kd[1]=Kd[1]+(math.fabs(err_y_auto-err_prior_y_auto)/(delta_whycon*100))
+            Kd[2]=Kd[2]+(math.fabs(err_z_auto-err_prior_z_auto)/(delta_whycon*100))
+            err_prior_x_auto=err_x_auto
+            err_prior_y_auto=err_y_auto
+            err_prior_z_auto=err_z_auto
           prev_ki=now_ki
         print Kp
         print Kd
@@ -408,16 +439,21 @@ def PID(err):
     if(w==53): #Since maximum size of err_x, err_y and err_z array is 54
         w=0
     else:
-        w=w+1  
-    # print Kp
-    # print Kd
-    # print Ki
-    # print flag_Kp_start
+        w=w+1
+
+    if(flag_Kp_start==3):
+      if(math.fabs(err[a]<=0.8) and math.fabs(err[a+1]<=0.8) and math.fabs(err[a+2])<=1):
+        if(time.time()>timeout):
+          count=count+1
+          if(count==3):
+            count=0
+          print 'Moving to point ',count
+          timeout=time.time()+10
+
     err_x_previous=err_x
     err_y_previous=err_y
     err_z_previous=err_z
     prev_whycon=now_whycon
-    #print flag_reduce_Kp_x
 
 if __name__=="__main__":
     rospy.init_node('drone_server')
@@ -443,12 +479,13 @@ if __name__=="__main__":
         while not rospy.is_shutdown():
             #key = getKey()
             if(j==0):
-              timeout = time.time() + 3 #For 3 seconds the drone is armed
+              timeout1 = time.time() + 3 #For 3 seconds the drone is armed
               while True: 
-                 if (time.time() > timeout):
+                 if (time.time()>=timeout1):
                    j=1
-                   timeout=0
-                   print 'Pluto has been ARMED'
+                   timeout1=0
+                   print 'Hey there! I am your auto tuning assistant. I will help you get the best PID values for your drone'
+                   print 'Pluto has been ARMED. Stay clear of the drone.'
                    break
                  cmd.rcRoll=1500
                  cmd.rcYaw=1500
@@ -460,6 +497,7 @@ if __name__=="__main__":
               print 'Auto tuning initiated'
               while True:
                   motion()
+                  # timeout = time.time() + 5
                   #if (time.time() > timeout):
                   #  timeout=0
                   #  i=1
@@ -502,7 +540,7 @@ if __name__=="__main__":
             #      cmd.rcThrottle =1300
             #      cmd.rcAUX4 = 1200
             #      command_pub.publish(cmd)
-            # #pub.publish(msg_pub)
+            #pub.publish(msg_pub)
             # #rate.sleep()
 
     except Exception as e:
