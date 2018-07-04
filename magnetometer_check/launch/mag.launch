@@ -1,0 +1,8 @@
+<launch>
+
+  <node name="plutonode" type="plutonode" pkg="plutodrone"/>
+  <node name="mag" type="rqt_plot.py" pkg="magnetometer_check"/>
+  #<node name= "mag_val" type= "magneto.py" pkg="magnetometer_check"/>
+
+
+</launch>
