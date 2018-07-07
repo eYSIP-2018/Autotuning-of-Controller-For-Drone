@@ -1,7 +1,7 @@
 **This package is used to test the magnetometer of the drone**
 
 # User Instructions
-Step 1: On a new terminal run **_rosrun magnetometer_check magneto.py _**.
+Step 1: On a new terminal run **_rosrun magnetometer_check magneto.py_**.
 
 Step 2: On another terminal run **_roslaunch magnetometer_check mag.launch_**.
 
