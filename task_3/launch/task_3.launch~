@@ -1,0 +1,39 @@
+<launch>
+   <arg name="name" default="whycon"/>
+   <arg name="targets" default="1"/>
+   <arg name="outer_diameter" default=".55"/>
+   <arg name="inner_diameter" default=".20"/>
+
+   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="640 " />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="framerate" value="120" />
+    <param name="io_method" value="mmap"/>
+  </node>
+
+  <group ns="usb_cam">
+    <node pkg="image_proc" type="image_proc" name="image_proc"/>
+  </group>
+
+  <node name="whycon" type="whycon" pkg="whycon" output="screen">
+    <param name="targets" value="$(arg targets)"/>
+    <param name="name" value="$(arg name)"/>
+    <param name="outer_diameter" value="$(arg outer_diameter)"/>
+    <param name="inner_diameter" value="$(arg inner_diameter)"/> 
+    <remap to="usb_cam/camera_info" from="camera/camera_info" />
+    <remap to="usb_cam/image_rect_color" from="camera/image_rect_color" />
+</node>
+
+<node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+  <remap from="image" to="/whycon/image_out"/>
+  <param name="autosize" value="true" />
+</node>
+
+<!-- 
+Add your python or cpp node here
+ -->
+ 
+</launch>
