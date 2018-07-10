@@ -131,7 +131,7 @@ possibility that due to human intervention the process is not tuned to obtain op
 \href{https://github.com/eYSIP-2018/Autotuning-of-Controller-For-Drone/blob/master/datasheets/MPU-9250-Datasheet.pdf}{Datasheet} 
 
 \item AK8963 Magnetometer \\
-\href{}{Datasheet} 
+\href{https://github.com/eYSIP-2018/Autotuning-of-Controller-For-Drone/blob/master/datasheets/AK8963.pdf}{Datasheet} 
 
 \item MS5611 Barometer\\
 \href{https://github.com/eYSIP-2018/Autotuning-of-Controller-For-Drone/blob/master/datasheets/stm32-ref-manual.pdf}{Datasheet}
@@ -394,12 +394,12 @@ The following table establishes the relation between the above mentioned paramet
 
 
 \begin{tabular}{|p{10em}|p{8em}|p{4em}|p{4em}|}\hline
-		\textbf{Controller type} & \textbf{Kp} &\textbf{Ti} & \textbf{Td}\\\hline
-		P  & 0.5 * Ku & $-$ & $-$\\\hline
-			PI & 0.5 * Ku & Tu/1.25 & $-$\\\hline
+    \textbf{Controller type} & \textbf{Kp} &\textbf{Ti} & \textbf{Td}\\\hline
+    P  & 0.5 * Ku & $-$ & $-$\\\hline
+      PI & 0.5 * Ku & Tu/1.25 & $-$\\\hline
 PD & 0.8 * Ku & $-$ & Tu/8 \\\hline
 Classic PID & 0.6 * Ku & Tu/2 & Tu/8\\\hline
-	Pessen Integral rule & 0.7 * Ku & Tu/2.5 & 3Tu/20 \\\hline
+  Pessen Integral rule & 0.7 * Ku & Tu/2.5 & 3Tu/20 \\\hline
 Some overshoot & 0.33 * Ku & Tu/2 & Tu/3\\\hline
 No overshoot & 0.2 * Ku & Tu/2 & Tu/3\\\hline
 
@@ -707,18 +707,18 @@ Below are couple of graphs obtained by auto tuning
 \end{enumerate}
 \pagebreak
 \textbf{Advantages:}\vspace{1em}
-           	\begin{enumerate}
-           	    \item No human monitoring or intervention required \textbf{even in a restricted frame.}
-           	    \item Auto tuning takes place on the go.
-           	\end{enumerate}
-           	
-           	
-           	\textbf{Disadvantages:}
-           	
-           	
-           	\begin{enumerate}
-           	    \item On an average it takes 75 seconds for auto tuning to complete.
-           	\end{enumerate}
+            \begin{enumerate}
+                \item No human monitoring or intervention required \textbf{even in a restricted frame.}
+                \item Auto tuning takes place on the go.
+            \end{enumerate}
+            
+            
+            \textbf{Disadvantages:}
+            
+            
+            \begin{enumerate}
+                \item On an average it takes 75 seconds for auto tuning to complete.
+            \end{enumerate}
 
 
 \section{Manual Tuning versus Auto - Tuning }
@@ -825,4 +825,3 @@ Here are a couple of snaps that depict the behaviour of a faulty(figure 1.11.2.1
     \end{enumerate}
 
 \end{document}
-
