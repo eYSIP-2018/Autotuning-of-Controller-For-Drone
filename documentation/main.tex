@@ -559,7 +559,7 @@ Depending upon the need and suitability any of the above types can be selected f
 
 
 
-
+\pagebreak
 \subsubsection{2. Iteration Based Auto - Tuning}
 
 This method calculates optimum values of PID parameters for the controller by tuning during the flight. The user enters a range for the possible values of the parameters and the code continuously changes them based on the principles of control theory.
@@ -573,18 +573,25 @@ This method calculates optimum values of PID parameters for the controller by tu
 \item After the drone crosses a sphere of radius 1.8 units ten times, Kp is set constant.
 
 \includegraphics[width = 12cm , height= 6cm]{Capture.png}
-
+\begin{center}
+    figure 1.7.6.2.1: Imaginary sphere for determining optimum Kp
+\end{center}
 
 \item Kd is increased again wrt rate of change of error till twice amplitude is less than 1 unit (for fifty cycles)
 
 \includegraphics[width = 8cm , height= 5cm]{Autotune_iteration_1_e1.png}
-
+\begin{center}
+    figure 1.7.6.2.2: Condition for determining optimum Kd
+\end{center}
 
 \item Then Ki and Kd are changed till the drone maintains itself in a position of 0.8 units circle (for ten seconds)
 \end{enumerate}
 
 
 \includegraphics[width = 8cm , height= 5cm]{Autotune_iteration_1_e2.png}
+\begin{center}
+    figure 1.7.6.2.3: Condition for determining optimum Ki
+\end{center}
 
 
 \href{https://github.com/eYSIP-2018/Autotuning-of-Controller-For-Drone/blob/Amit-Kumar/Auto_Tuning.py}{Click here} to access the python program for Iteration Based Auto - Tuning\\
@@ -599,113 +606,155 @@ These small snippets from the code will help in understanding it better
 
 
 \hspace{0.5cm}\includegraphics[width = 12cm , height= 1cm]{whycon_1.png}
-
+\begin{center}
+    figure 1.7.6.2.4: Code snippet for serial number 1
+\end{center}
 \item The global variables for the x, y and z co ordinate store the float values given by the camera.
 
 
 \includegraphics[width = 5cm , height= 2cm]{Callback_2.png}
-
+\begin{center}
+    figure 1.7.6.2.5: Code snippet for serial number 2
+\end{center}
 
 \item Initialisation function asks for the input range for the PID parameters
 
 
-\includegraphics[width = 12cm , height= 7cm]{Initialisation_3.png}
-
+\includegraphics[width = 12cm , height= 6cm]{Initialisation_3.png}
+\begin{center}
+    figure 1.7.6.2.6: Code snippet for serial number 3
+\end{center}
 
 \item A node is initialised to publish commands to drone.
 
 
 \includegraphics[width = 12cm , height= 0.7cm]{Drone_pub_5.png}
+\begin{center}
+    figure 1.7.6.2.7: Code snippet for serial number 4
+\end{center}
 
 \item This part publishes the necessary values for the drone to get armed.
 
 
 \includegraphics[width = 7cm , height= 3cm]{Arm_4.png}
+\begin{center}
+    figure 1.7.6.2.8: Code snippet for serial number 5
+\end{center}
 
 \item After 3 seconds, the code enters into the auto tuning state.
 
 \includegraphics[width = 10cm , height= 8cm]{Auto_init_6.png}
+\begin{center}
+    figure 1.7.6.2.9: Code snippet for serial number 6
+\end{center}
 
 \item The motion function helps in setting the initial values given by the user and calculating the error between the set point and the current position.
 
 \includegraphics[width = 14cm , height= 6cm]{motion_fn_7.png}
+\begin{center}
+    figure 1.7.6.2.10: Code snippet for serial number 7
+\end{center}
 
 
 \item The motion function calls and passes the error to PID function for calculating the PID output. A sample time of 23000 micro seconds is used. This is the time it takes for the communication to take place between drone and the code.
 
 
 \includegraphics[width = 13cm , height= 3cm]{PID_err_8(1).png}
-
+\begin{center}
+    figure 1.7.6.2.11: Code snippet for serial number 8
+\end{center}
 
 \item Since the co ordinates update at a frequency of 30 Hz, sampling is applied here as well. Kp tuning gets initiated.
 
 
 \includegraphics[width = 13cm , height= 6cm]{PID_err_8(2).png}
-
+\begin{center}
+    figure 1.7.6.2.12: Code snippet for serial number 9
+\end{center}
 
 \item If the drone enters into an imaginary sphere of approximately 1.8 units radius, Kp tuning gets completed.
 
 
 \includegraphics[width = 13cm , height= 2cm]{PID_err_8(3).png}
+\begin{center}
+    figure 1.7.6.2.13: Code snippet for serial number 10
+\end{center}
 
 
 \item After Kp, Kd tuning gets initiated. The code continuously monitors the amplitude of the error graph and increases Kd wrt rate of change of error. If twice the amplitude is less than 1 unit for x and y axis and less than 1.6 units for the z axis (for 10 cycles) then next part of the code starts. 
 
 
-\includegraphics[width = 14cm , height= 5cm]{PID_err_8(4).png}
-
+\includegraphics[width = 14cm , height= 4.5cm]{PID_err_8(4).png}
+\begin{center}
+    figure 1.7.6.2.14: Code snippet for serial number 11
+\end{center}
 
 \item An important addition to this part is to take care of the condition where over damped case in any of the axis might arrive.
 Hence if twice the amplitude is greater than 2 units in the x and y axis, Kd starts to reduce wrt rate of change of error.
 
-Video link describing the problem and solution is mentioned in the Challenges Section.
-
 \includegraphics[width = 13.5cm , height= 3cm]{PID_err_8(5).png}
-
+\begin{center}
+    figure 1.7.6.2.15: Code snippet for serial number 12
+\end{center}
 
 \item From here, Ki and Kd tuning goes on simultaneously. With increase in Ki to reduce the steady state error, oscillations generally occur. Hence Kd is increased to damp the oscillations. Again as discussed above the conditions take care of the problem that might arise because of the over damped condition.
 
 \includegraphics[width = 10cm , height= 3cm]{PID_err_8(6).png}
-
+\begin{center}
+    figure 1.7.6.2.16: Code snippet for serial number 13
+\end{center}
 
 \item After the error is less than 0.8 units in the x and y axis and less than 1 unit in the z axis for 10 seconds, the auto tuning gets completed. From here on, Kp, Ki and Kd are constants. Way point navigation gets initiated.
 
 
 \includegraphics[width = 12cm , height= 2cm]{PID_err_8(7).png}
-
+\begin{center}
+    figure 1.7.6.2.17: Code snippet for serial number 14
+\end{center}
 
 \item These conditions are set for all the PID parameters so that they stay in the range provided by the user.
 
 
 \includegraphics[width = 8cm , height= 1.5cm]{PID_err_8(8).png}
-
+\begin{center}
+    figure 1.7.6.2.18: Code snippet for serial number 15
+\end{center}
 
 \item After way point navigation, landing gets initiated. Throttle is kept constant so that the drone slowly comes down. At the same time, PID controller keeps on working for x and y axis so that the drone lands at the same position specified by the user.
 
 
 \includegraphics[width = 8cm , height= 6cm]{landing.png}
-
+\begin{center}
+    figure 1.7.6.2.19: Code snippet for serial number 16
+\end{center}
 
 \item After landing, the drone gets disarmed.
 
 
 \includegraphics[width = 8cm , height= 5cm]{disarm.png}
-\pagebreak
+\begin{center}
+    figure 1.7.6.2.20: Code snippet for serial number 17
+\end{center}
 \item The error is continuously published for the graph.
 
 
 \includegraphics[width = 12cm , height= 1cm]{err_pub_9.png}
-
+\begin{center}
+    figure 1.7.6.2.21: Code snippet for serial number 18
+\end{center}
 Below are couple of graphs obtained by auto tuning
 
 
 \includegraphics[width = 12cm , height= 7cm]{Autotune_iteration_1.png}
-
+\begin{center}
+    figure 1.7.6.2.22: Iteration Based Auto Tuning Graph 1
+\end{center}
 
 \includegraphics[width = 12cm , height= 7cm]{Autotune_iteration_2.png}
-
+\begin{center}
+    figure 1.7.6.2.23: Iteration Based Auto Tuning Graph 2
+\end{center}
 \end{enumerate}
-\pagebreak
 \textbf{Advantages:}\vspace{1em}
             \begin{enumerate}
                 \item No human monitoring or intervention required \textbf{even in a restricted frame.}
@@ -720,7 +769,7 @@ Below are couple of graphs obtained by auto tuning
                 \item On an average it takes 75 seconds for auto tuning to complete.
             \end{enumerate}
 
-
+\pagebreak
 \section{Manual Tuning versus Auto - Tuning }
 One of the goals of the project was to ponder upon the advantages of auto-tuning over manual tuning.\\
 The results that were obtained from auto-tuning clearly suggests that it is a more efficient way to tune the PID parameters.\\
@@ -770,6 +819,9 @@ In short auto-tuning gives consistent and optimum response every time !
 Following is the graph obtained
 
 \includegraphics[width = 12cm , height= 7cm]{Overdamped.png}
+\begin{center}
+    figure 1.11.1.1: Response of over damped PID controller
+\end{center}
 
 
 Video Describing Solution for over damped PID Controller
@@ -779,11 +831,10 @@ Following is the graph obtained
 
 
 \includegraphics[width = 12cm , height= 7cm]{Overdamped_Solved.png}
+\begin{center}
+    figure 1.11.1.2: Response of damped PID controller
+\end{center}
 
-
-Any issues in code and hardware.
-
-Any failure or challenges faced during project
 \subsection{Hardware Breakdowns}
 Throughout the duration of the project there were a lot of hardware breakdowns.\\
 The major failure in the hardware lied in faulty magnetometer.\\
@@ -825,3 +876,4 @@ Here are a couple of snaps that depict the behaviour of a faulty(figure 1.11.2.1
     \end{enumerate}
 
 \end{document}
+
